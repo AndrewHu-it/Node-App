@@ -10,6 +10,9 @@ class AppState: ObservableObject {
     @Published var pythonOutput: String = ""
 }
 
+//App, Scene, View
+//State Object --> Observed Object that is passed in.
+//some View vs some Scene
 
 @main
 struct NodeApp: App {
@@ -81,6 +84,8 @@ struct MenuBarContentView: View {
                     }
                 }
                 .buttonStyle(MenuButtonStyle(compact: true))
+                .contentShape(Rectangle()) // Added this line
+                //make a max size
             }
             .padding(.horizontal, 8)
             
@@ -89,6 +94,7 @@ struct MenuBarContentView: View {
             // Window Buttons
             SettingsButton()
             LogsButton()
+            
             
         }
         .padding(.horizontal)
@@ -104,6 +110,7 @@ struct MenuButtonStyle: ButtonStyle {
         configuration.label
             .padding(.vertical, compact ? 4 : 6)
             .padding(.horizontal, compact ? 8 : 10)
+            // Remove .frame(maxWidth: .infinity) to keep button content-sized
             .background(configuration.isPressed ? Color.gray.opacity(0.2) : Color.clear)
             .cornerRadius(6)
             .foregroundColor(.primary)
@@ -111,9 +118,9 @@ struct MenuButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
             )
+            .contentShape(Rectangle()) // Keep this for hit area
     }
 }
-
 struct SettingsButton: View {
     @Environment(\.openWindow) private var openWindow
     
@@ -136,6 +143,7 @@ struct SettingsButton: View {
         .scaleEffect(1.0)
         .animation(.easeInOut(duration: 0.2), value: false)
         .accessibilityLabel("Open settings window")
+        .contentShape(Rectangle()) // Added this line
     }
 }
 
@@ -158,5 +166,6 @@ struct LogsButton: View {
         }
         .buttonStyle(MenuButtonStyle())
         .accessibilityLabel("Open logs window")
+        .contentShape(Rectangle()) // Added this line
     }
 }
