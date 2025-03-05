@@ -1,4 +1,7 @@
 import SwiftUI
+import AppKit
+
+
 
 
 
@@ -8,7 +11,35 @@ class AppState: ObservableObject {
     @Published var running: Bool = true
     @Published var isProcessing: Bool = false
     @Published var pythonOutput: String = ""
+    @Published var logs: [LogEntry] = [] // Add logs array
+    
+    init() {
+        addLog("App started") // Log app initialization
+    }
+    
+    func addLog(_ message: String) {
+        DispatchQueue.main.async {
+            let newLog = LogEntry(timestamp: Date(), message: message) // Reordered arguments
+            self.logs.append(newLog)
+            if self.logs.count > 50 {
+                self.logs.removeFirst() // Keep only the most recent 50 logs
+            }
+        }
+    }
 }
+
+
+struct LogEntry: Identifiable, Equatable {
+    let id = UUID()
+    let timestamp: Date
+    let message: String
+    
+    static func ==(lhs: LogEntry, rhs: LogEntry) -> Bool {
+        return lhs.id == rhs.id
+    }
+}
+
+
 
 //App, Scene, View
 //State Object --> Observed Object that is passed in.
@@ -21,16 +52,19 @@ struct NodeApp: App {
     var body: some Scene {
         Window("Settings", id: "settings-window") {
             SettingsView()
-                .frame(width: 300, height: 200)
+                .environmentObject(appState)
+                .modifier(WindowAccessor { window in
+                    window.setContentSize(NSSize(width: 500, height: 500)) // Set exact content size
+                })
         }
         
-        
-        Window("Logs", id: "logs-window"){
+        Window("Logs", id: "logs-window") {
             LogsView()
-                .frame(width: 50, height: 50)
+                .environmentObject(appState)
+                .modifier(WindowAccessor { window in
+                    window.setContentSize(NSSize(width: 600, height: 400)) // Set exact content size
+                })
         }
-        
-        
         
         MenuBarExtra("Distributed Computing Network", systemImage: "aqi.medium") {
             MenuBarContentView(appState: appState)
@@ -72,9 +106,9 @@ struct MenuBarContentView: View {
                 
                 // Toggle Button
                 Button(action: {
-                    print("Button pressed. Current running: \(appState.running)")
+                    appState.addLog("Running state changed to \(appState.running)") // Add log
                     appState.running.toggle()
-                    print("New running value: \(appState.running)")
+                    
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: appState.running ? "pause.circle" : "play.circle")
@@ -169,3 +203,7 @@ struct LogsButton: View {
         .contentShape(Rectangle()) // Added this line
     }
 }
+
+
+
+//AUXILARY:
