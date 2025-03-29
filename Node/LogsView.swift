@@ -11,6 +11,7 @@ struct LogsView: View {
         formatter.dateFormat = "HH:mm:ss"
         return formatter
     }()
+
     
     var body: some View {
         // Setting the ZStack alignment to topLeading makes all its children start at the top left.

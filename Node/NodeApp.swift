@@ -28,14 +28,19 @@ class AppState: ObservableObject {
     @AppStorage("nodeID") var nodeID: String = ""
     @AppStorage("hasSetNodeID") var hasSetNodeID: Bool = false
     
+    @Published var settingsWindow: NSWindow?   // NEW: to track the settings
     @Published var nameInputWindow: NSWindow? // Add this line
+    @Published var logsWindow: NSWindow?          // NEW: Track logs window if desired
+
+    
+    
     @Published var running: Bool = false
     @Published var isProcessing: Bool = false
     @Published var pythonOutput: String = ""
     @Published var logs: [LogEntry] = [] // Add logs array
     
     init() {
-        // reset() // Uncomment if you want to reset on every launch
+         reset() // Uncomment if you want to reset on every launch
         addLog("App started") // Log app initialization
         print("hello this is a test")
     }
@@ -109,37 +114,79 @@ struct NodeApp: App {
         WindowGroup("Name Input", id: "name-input-window") {
             NameInputView()
                 .environmentObject(appState)
-                .modifier(WindowAccessor { window in
-                    appState.nameInputWindow = window // Add this line
-                    window.setContentSize(NSSize(width: 300, height: 150))
-                })
-        }
-        .handlesExternalEvents(matching: [])
+                        .modifier(WindowAccessor { window in
+                            appState.nameInputWindow = window
+                            window.setContentSize(NSSize(width: 225, height: 275))
+                        })
+                        .windowAccessor { window in
+                            // Restore the standard window style masks for title bar, etc.
+                            window.styleMask.remove([.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView])
+                            
+                            // Make the title bar transparent so we can color behind it.
+                             window.titleVisibility = .hidden
+                            
+                            // Allow the user to drag/move the window by clicking anywhere in the background.
+                            window.isMovableByWindowBackground = true
+                            
+                            
+                            // Round window corners. This will apply a rounded corner to the content area.
+                            window.contentView?.wantsLayer = true
+                            window.contentView?.layer?.cornerRadius = 12
+                            window.contentView?.layer?.masksToBounds = true
+                        }
+                }
+                .handlesExternalEvents(matching: [])
         
         WindowGroup("Settings", id: "settings-window") {
             SettingsView()
                 .environmentObject(appState)
                 .modifier(WindowAccessor { window in
+                    // Store the Settings window reference.
+                    appState.settingsWindow = window
                     window.setContentSize(NSSize(width: 500, height: 500))
+                    // Add an observer to clear the reference when the window closes.
+                    NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
+                        appState.settingsWindow = nil
+                    }
                 })
         }
-        .handlesExternalEvents(matching: []) // Prevent automatic opening
+        .handlesExternalEvents(matching: [])
         
-        WindowGroup("Name Input", id: "name-input-window") {
-            NameInputView()
+        
+        // NEW LOGS WINDOW GROUP
+        WindowGroup("Logs", id: "logs-window") {
+            LogsView()
                 .environmentObject(appState)
                 .modifier(WindowAccessor { window in
-                    window.setContentSize(NSSize(width: 300, height: 150))
+                    appState.logsWindow = window
+                    window.setContentSize(NSSize(width: 600, height: 400))
+                    
+                    // Clear reference on close
+                    NotificationCenter.default.addObserver(
+                        forName: NSWindow.willCloseNotification,
+                        object: window,
+                        queue: .main
+                    ) { _ in
+                        appState.logsWindow = nil
+                    }
                 })
         }
-        .handlesExternalEvents(matching: []) // Prevent automatic opening
+        .handlesExternalEvents(matching: [])
+        
+        
+
         
         MenuBarExtra("Distributed Computing Network", systemImage: "aqi.medium") {
             MenuBarContentView(appState: appState)
+                .environmentObject(appState)  // Inject the AppState into the environment
                 .frame(minWidth: 250)
         }
         .menuBarExtraStyle(.window)
         .defaultSize(width: 250, height: 180)
+        
+        
+        //NEED TO MAKE THE LOGS WINDOW
+
     }
 }
 
@@ -221,11 +268,17 @@ struct MenuButtonStyle: ButtonStyle {
 
 struct SettingsButton: View {
     @Environment(\.openWindow) private var openWindow
+    @EnvironmentObject var appState: AppState  // Added to access settingsWindow
     
     var body: some View {
         Button(action: {
-            NSApplication.shared.activate(ignoringOtherApps: true)
-            openWindow(id: "settings-window")
+            // Check if the Settings window already exists and is visible.
+            if let settingsWin = appState.settingsWindow, settingsWin.isVisible {
+                settingsWin.makeKeyAndOrderFront(nil)
+            } else {
+                NSApplication.shared.activate(ignoringOtherApps: true)
+                openWindow(id: "settings-window")
+            }
         }) {
             HStack(spacing: 8) {
                 Image(systemName: "gearshape.fill")
@@ -244,6 +297,8 @@ struct SettingsButton: View {
         .contentShape(Rectangle())
     }
 }
+
+
 
 struct LogsButton: View {
     @Environment(\.openWindow) private var openWindow
