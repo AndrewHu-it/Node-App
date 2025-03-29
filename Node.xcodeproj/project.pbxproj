@@ -23,18 +23,6 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		4984A33A2D95B5D300DD4326 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 6;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		49E5DF8F2D73E83900AEE302 /* Node.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Node.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		49E5DFA02D73E83B00AEE302 /* NodeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NodeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -51,25 +39,11 @@
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		4984A3422D95BE7C00DD4326 /* Exceptions for "Node" folder in "Copy Files" phase from "Node" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			attributesByRelativePath = {
-				Executables/create_node = (CodeSignOnCopy, );
-			};
-			buildPhase = 4984A33A2D95B5D300DD4326 /* CopyFiles */;
-			membershipExceptions = (
-				Executables/create_node,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		49E5DF912D73E83900AEE302 /* Node */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				4945E5822D7420AD00057BAF /* Exceptions for "Node" folder in "Node" target */,
-				4984A3422D95BE7C00DD4326 /* Exceptions for "Node" folder in "Copy Files" phase from "Node" target */,
 			);
 			path = Node;
 			sourceTree = "<group>";
@@ -141,7 +115,6 @@
 				49E5DF8B2D73E83900AEE302 /* Sources */,
 				49E5DF8C2D73E83900AEE302 /* Frameworks */,
 				49E5DF8D2D73E83900AEE302 /* Resources */,
-				4984A33A2D95B5D300DD4326 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -438,7 +411,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Node/Preview Content\"";
 				DEVELOPMENT_TEAM = 75CJ388NR2;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Node/Info.plist;
@@ -467,7 +440,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Node/Preview Content\"";
 				DEVELOPMENT_TEAM = 75CJ388NR2;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Node/Info.plist;

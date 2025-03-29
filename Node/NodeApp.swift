@@ -3,7 +3,6 @@
 import SwiftUI
 import AppKit
 
-// App Delegate to handle application launch
 class AppDelegate: NSObject, NSApplicationDelegate {
     var appState: AppState?
     var openWindow: ((String) -> Void)?
@@ -23,27 +22,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 // App State
 class AppState: ObservableObject {
+
+    private lazy var taskManager: TaskManager = {
+        return TaskManager(appState: self)
+    }()
+    
     @AppStorage("name") var name: String = ""
     @AppStorage("hasSetName") var hasSetName: Bool = false
     @AppStorage("nodeID") var nodeID: String = ""
     @AppStorage("hasSetNodeID") var hasSetNodeID: Bool = false
     
-    @Published var settingsWindow: NSWindow?   // NEW: to track the settings
-    @Published var nameInputWindow: NSWindow? // Add this line
-    @Published var logsWindow: NSWindow?          // NEW: Track logs window if desired
-
+    @Published var settingsWindow: NSWindow?
+    @Published var nameInputWindow: NSWindow?
+    @Published var logsWindow: NSWindow?
     
-    
-    @Published var running: Bool = false
+    @Published var running: Bool = false {
+        didSet {
+            if running {
+                taskManager.start() // taskManager is lazily initialized here
+            } else {
+                taskManager.stop()
+            }
+        }
+    }
     @Published var isProcessing: Bool = false
     @Published var pythonOutput: String = ""
-    @Published var logs: [LogEntry] = [] // Add logs array
+    @Published var logs: [LogEntry] = []
     
     init() {
-         reset() // Uncomment if you want to reset on every launch
-        addLog("App started") // Log app initialization
-        print("hello this is a test")
+        reset() // Safe now, because taskManager isn’t accessed yet
+        addLog("App started") // Safe, taskManager still not needed
     }
+
     
     func addLog(_ message: String) {
         DispatchQueue.main.async {
@@ -55,7 +65,6 @@ class AppState: ObservableObject {
         }
     }
     
-    // Not sure where this is invoked.
     func reset() {
         if let bundleID = Bundle.main.bundleIdentifier {
             UserDefaults.standard.removePersistentDomain(forName: bundleID)
@@ -71,6 +80,28 @@ class AppState: ObservableObject {
         logs = []
         addLog("App has been reset to default settings.")
     }
+    
+    func updateNodeAvailability() {
+            // Ensure nodeID is set.
+            guard hasSetNodeID, !nodeID.isEmpty else {
+                addLog("Node ID is not set. Skipping API update.")
+                return
+            }
+            
+            // Call the API and handle the response.
+            NodeAvailabilityAPI.shared.updateAvailability(nodeID: nodeID, availability: running) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let json):
+                        self.addLog("Node availability updated successfully: \(json)")
+                    case .failure(let error):
+                        self.addLog("Failed to update node availability: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+    
+    
 }
 
 struct LogEntry: Identifiable, Equatable {
@@ -82,6 +113,9 @@ struct LogEntry: Identifiable, Equatable {
         return lhs.id == rhs.id
     }
 }
+
+
+
 
 @main
 struct NodeApp: App {
@@ -152,9 +186,7 @@ struct NodeApp: App {
         }
         .handlesExternalEvents(matching: [])
         
-        
-        // NEW LOGS WINDOW GROUP
-        WindowGroup("Logs", id: "logs-window") {
+                WindowGroup("Logs", id: "logs-window") {
             LogsView()
                 .environmentObject(appState)
                 .modifier(WindowAccessor { window in
@@ -183,12 +215,12 @@ struct NodeApp: App {
         }
         .menuBarExtraStyle(.window)
         .defaultSize(width: 250, height: 180)
-        
-        
-        //NEED TO MAKE THE LOGS WINDOW
-
     }
 }
+
+
+
+
 
 // Separate View for MenuBar content
 struct MenuBarContentView: View {
@@ -223,6 +255,7 @@ struct MenuBarContentView: View {
                 Button(action: {
                     appState.addLog("Running state changed to \(appState.running)")
                     appState.running.toggle()
+                    appState.updateNodeAvailability()
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: appState.running ? "pause.circle" : "play.circle")
