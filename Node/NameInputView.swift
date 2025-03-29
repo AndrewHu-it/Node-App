@@ -25,7 +25,7 @@ struct NameInputView: View {
                             openSettings: {
                                 // Check if the Settings window is already open.
                                 if let settingsWin = appState.settingsWindow, settingsWin.isVisible {
-                                    settingsWin.makeKeyAndOrderFront(nil)
+                                    settingsWin.orderFrontRegardless()
                                 } else {
                                     NSApplication.shared.activate(ignoringOtherApps: true)
                                     openWindow(id: "settings-window")

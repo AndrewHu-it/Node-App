@@ -145,7 +145,7 @@ struct NodeApp: App {
 
 
         
-        WindowGroup("Name Input", id: "name-input-window") {
+        WindowGroup("", id: "name-input-window") {
             NameInputView()
                 .environmentObject(appState)
                         .modifier(WindowAccessor { window in
@@ -153,26 +153,36 @@ struct NodeApp: App {
                             window.setContentSize(NSSize(width: 225, height: 275))
                         })
                         .windowAccessor { window in
-                            // Restore the standard window style masks for title bar, etc.
-                            window.styleMask.remove([.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView])
+                            appState.nameInputWindow = window
+                            window.setContentSize(NSSize(width: 225, height: 275))
                             
-                            // Make the title bar transparent so we can color behind it.
-                             window.titleVisibility = .hidden
+                            // Keep the default title bar (do not make it transparent)
+                            window.titlebarAppearsTransparent = true
+                    
+
+                            // Insert a custom view behind the standard window buttons to change the title bar’s color.
+                            if let titleBarContainer = window.standardWindowButton(.closeButton)?.superview {
+                                // Create a view that matches the title bar container’s bounds.
+                                let customTitleBarView = NSView(frame: titleBarContainer.bounds)
+                                customTitleBarView.autoresizingMask = [.width, .height]
+                                customTitleBarView.wantsLayer = true
+                                // Set your desired color here.
+                                customTitleBarView.layer?.backgroundColor = NSColor.black.cgColor
+                                
+                                // Insert the custom view below the window buttons.
+                                titleBarContainer.addSubview(customTitleBarView, positioned: .below, relativeTo: nil)
+                            }
                             
-                            // Allow the user to drag/move the window by clicking anywhere in the background.
+                            // Optional: Allow the window to be moved by dragging its background.
                             window.isMovableByWindowBackground = true
-                            
-                            
-                            // Round window corners. This will apply a rounded corner to the content area.
-                            window.contentView?.wantsLayer = true
-                            window.contentView?.layer?.cornerRadius = 12
-                            window.contentView?.layer?.masksToBounds = true
                         }
+
                 }
                 .handlesExternalEvents(matching: [])
         
         WindowGroup("Settings", id: "settings-window") {
             SettingsView()
+            
                 .environmentObject(appState)
                 .modifier(WindowAccessor { window in
                     // Store the Settings window reference.
@@ -186,7 +196,7 @@ struct NodeApp: App {
         }
         .handlesExternalEvents(matching: [])
         
-                WindowGroup("Logs", id: "logs-window") {
+        WindowGroup("Logs", id: "logs-window") {
             LogsView()
                 .environmentObject(appState)
                 .modifier(WindowAccessor { window in
@@ -201,8 +211,25 @@ struct NodeApp: App {
                     ) { _ in
                         appState.logsWindow = nil
                     }
+                    
+                    // Customize the title bar appearance to match the Name Input window.
+                    window.titlebarAppearsTransparent = true
+                    if let titleBarContainer = window.standardWindowButton(.closeButton)?.superview {
+                        let customTitleBarView = NSView(frame: titleBarContainer.bounds)
+                        customTitleBarView.autoresizingMask = [.width, .height]
+                        customTitleBarView.wantsLayer = true
+                        // Set the custom title bar's background color to black.
+                        customTitleBarView.layer?.backgroundColor = NSColor.black.cgColor
+                        
+                        // Insert the custom view behind the standard window buttons.
+                        titleBarContainer.addSubview(customTitleBarView, positioned: .below, relativeTo: nil)
+                    }
+                    
+                    // Allow window dragging by the background.
+                    window.isMovableByWindowBackground = true
                 })
         }
+
         .handlesExternalEvents(matching: [])
         
         
@@ -225,6 +252,8 @@ struct NodeApp: App {
 // Separate View for MenuBar content
 struct MenuBarContentView: View {
     @ObservedObject var appState: AppState
+    @Environment(\.openWindow) private var openWindow
+
     
     var body: some View {
         VStack(spacing: 10) {
@@ -253,6 +282,20 @@ struct MenuBarContentView: View {
                 
                 // Toggle Button
                 Button(action: {
+                    if !appState.hasSetName || !appState.hasSetNodeID {
+                        // If the registration window already exists and is visible, bring it to the front.
+                        if let nameInputWindow = appState.nameInputWindow, nameInputWindow.isVisible {
+                            nameInputWindow.orderFrontRegardless()
+                        } else {
+                            // Otherwise, activate the app and open the registration window.
+                            NSApplication.shared.activate(ignoringOtherApps: true)
+                            openWindow(id: "name-input-window")
+                        }
+                        appState.addLog("Registration incomplete. Re-opening Name Input window.")
+                        return // Exit without toggling processing.
+                    }
+                    
+                    
                     appState.addLog("Running state changed to \(appState.running)")
                     appState.running.toggle()
                     appState.updateNodeAvailability()
@@ -307,7 +350,7 @@ struct SettingsButton: View {
         Button(action: {
             // Check if the Settings window already exists and is visible.
             if let settingsWin = appState.settingsWindow, settingsWin.isVisible {
-                settingsWin.makeKeyAndOrderFront(nil)
+                settingsWin.orderFrontRegardless()
             } else {
                 NSApplication.shared.activate(ignoringOtherApps: true)
                 openWindow(id: "settings-window")
@@ -335,11 +378,19 @@ struct SettingsButton: View {
 
 struct LogsButton: View {
     @Environment(\.openWindow) private var openWindow
-    
+    @EnvironmentObject var appState: AppState   // Access the AppState for logsWindow
+
     var body: some View {
         Button(action: {
-            NSApplication.shared.activate(ignoringOtherApps: true)
-            openWindow(id: "logs-window")
+            // Check if the logs window already exists and is visible
+            if let logsWin = appState.logsWindow, logsWin.isVisible {
+                // Bring the existing logs window to the front
+                logsWin.orderFrontRegardless()
+            } else {
+                // Activate the app and open a new logs window
+                NSApplication.shared.activate(ignoringOtherApps: true)
+                openWindow(id: "logs-window")
+            }
         }) {
             HStack(spacing: 8) {
                 Image(systemName: "doc.text")
